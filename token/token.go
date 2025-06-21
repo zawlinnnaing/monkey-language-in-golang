@@ -11,6 +11,7 @@ const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
 
+	// User identified token
 	IDENT = "IDENT"
 	INT   = "INT"
 
@@ -29,3 +30,39 @@ const (
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
 )
+
+var keywords = map[string]TokenType{
+	"fn":  FUNCTION,
+	"let": LET,
+}
+
+var AVAILABLE_TOKEN_TYPES []TokenType = []TokenType{
+	ILLEGAL,
+	EOF,
+	IDENT,
+	INT,
+	ASSIGN,
+	PLUS,
+	COMMA,
+	SEMICOLON,
+	LPAREN,
+	RPAREN,
+	LBRACE,
+	RBRACE,
+	FUNCTION,
+	LET,
+}
+
+func LookupIdentifier(token string) TokenType {
+	if tok, ok := keywords[token]; ok {
+		return tok
+	}
+	return IDENT
+}
+
+func New(tokenType TokenType, literal string) *Token {
+	return &Token{
+		Type:    tokenType,
+		Literal: literal,
+	}
+}
