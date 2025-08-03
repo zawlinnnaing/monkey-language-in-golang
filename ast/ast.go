@@ -1,9 +1,15 @@
 package ast
 
-import "github.com/zawlinnnaing/monkey-language-in-golang/token"
+import (
+	"bytes"
+	"fmt"
+
+	"github.com/zawlinnnaing/monkey-language-in-golang/token"
+)
 
 type Node interface {
 	TokenLiteral() string
+	String() string
 }
 
 type Statement interface {
@@ -18,6 +24,14 @@ type Expression interface {
 
 type Program struct {
 	Statements []Statement
+}
+
+func (p *Program) String() string {
+	var out bytes.Buffer
+	for _, statement := range p.Statements {
+		out.WriteString(statement.String())
+	}
+	return out.String()
 }
 
 type Identifier struct {
@@ -36,9 +50,21 @@ func (ls *LetStatement) TokenLiteral() string {
 	return ls.Token.Literal
 }
 
+func (ls *LetStatement) String() string {
+	value := ""
+	if ls.Value != nil {
+		value = ls.Value.String()
+	}
+	return fmt.Sprintf("%v %v = %v;", ls.Token.Literal, ls.Name.String(), value)
+}
+
 func (id *Identifier) expressionNode() {}
 func (id *Identifier) TokenLiteral() string {
 	return id.Token.Literal
+}
+
+func (id *Identifier) String() string {
+	return id.Value
 }
 
 type ReturnStatement struct {
@@ -49,4 +75,29 @@ type ReturnStatement struct {
 func (rs *ReturnStatement) statementNode() {}
 func (rs *ReturnStatement) TokenLiteral() string {
 	return rs.Token.Literal
+}
+
+func (rs *ReturnStatement) String() string {
+	val := ""
+	if rs.ReturnValue != nil {
+		val = rs.ReturnValue.String()
+	}
+	return fmt.Sprintf("return %v;", val)
+}
+
+type ExpressionStatement struct {
+	Token      token.Token
+	Expression Expression
+}
+
+func (es *ExpressionStatement) statementNode() {}
+func (es *ExpressionStatement) TokenLiteral() string {
+	return es.Token.Literal
+}
+func (es *ExpressionStatement) String() string {
+	val := ""
+	if es.Expression != nil {
+		val = es.Expression.String()
+	}
+	return val
 }
