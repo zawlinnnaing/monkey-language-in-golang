@@ -8,11 +8,26 @@ import (
 	"github.com/zawlinnnaing/monkey-language-in-golang/token"
 )
 
+// Important to keep the order, lower in the list means it takes greater precedence
+const (
+	_ int = iota
+	LOWEST
+	EQUALS       // ==
+	LESS_GREATER // > OR <
+	SUM          // +
+	PRODUCT      // *
+	PREFIX       // -X or !X
+	CALL         // myFunction(x)
+)
+
 type Parser struct {
 	lexer        *lexer.Lexer
 	currentToken token.Token
 	peekToken    token.Token
 	errors       []string
+
+	prefixParsingFns map[token.TokenType]prefixParsingFn
+	infixParsingFns  map[token.TokenType]infixParsingFn
 }
 
 func (p *Parser) nextToken() {
@@ -80,7 +95,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -97,9 +112,42 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return statement
 }
 
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	statement := &ast.ExpressionStatement{
+		Token: p.currentToken,
+	}
+	statement.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+	return statement
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefixParsingFn := p.prefixParsingFns[p.currentToken.Type]
+	if prefixParsingFn == nil {
+		return nil
+	}
+	return prefixParsingFn()
+}
+
 func (p *Parser) peekErrors(expectTokenType token.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s, got %s instead", expectTokenType, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
+}
+
+func (p *Parser) registerPrefixFn(token token.TokenType, fn prefixParsingFn) {
+	p.prefixParsingFns[token] = fn
+}
+
+func (p *Parser) registerInfixFn(token token.TokenType, fn infixParsingFn) {
+	p.infixParsingFns[token] = fn
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	identifier := &ast.Identifier{Token: p.currentToken, Value: p.currentToken.Literal}
+	return identifier
 }
 
 func (p *Parser) Errors() []string {
@@ -110,11 +158,16 @@ func New(l *lexer.Lexer) *Parser {
 	p := Parser{
 		lexer:  l,
 		errors: []string{},
+
+		prefixParsingFns: make(map[token.TokenType]prefixParsingFn),
+		infixParsingFns:  make(map[token.TokenType]infixParsingFn),
 	}
 
 	// Read two tokens, so curToken and peekToken are both set
 	p.nextToken()
 	p.nextToken()
+
+	p.registerPrefixFn(token.IDENT, p.parseIdentifier)
 
 	return &p
 }

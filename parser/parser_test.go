@@ -98,3 +98,27 @@ func TestReturnStatement(t *testing.T) {
 		}
 	}
 }
+
+func TestIdentifierExpress(t *testing.T) {
+	input := "foobar"
+
+	lexer := lexer.New(input)
+	parser := New(lexer)
+	program := parser.ParseProgram()
+	checkParseErrors(t, parser)
+	if len(program.Statements) != 1 {
+		t.Fatalf("Expected program statements to be 1, received %d", len(program.Statements))
+	}
+	statement, ok := (program.Statements[0]).(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Expected expression statement, received %v", statement)
+	}
+	ident, ok := statement.Expression.(*ast.Identifier)
+	if !ok {
+		t.Fatalf("Expected intend statement, received %v", ident)
+	}
+	if ident.Token.Literal != input {
+		t.Fatalf("Expected token literal to be %v, received %v", ident.Token.Literal, input)
+	}
+
+}

@@ -34,6 +34,7 @@ func (p *Program) String() string {
 	return out.String()
 }
 
+// Identifier implements Expression interface
 type Identifier struct {
 	Token token.Token
 	Value string
@@ -101,3 +102,6 @@ func (es *ExpressionStatement) String() string {
 	}
 	return val
 }
+
+// Compile time checks
+var _ Expression = (*Identifier)(nil)
