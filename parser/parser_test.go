@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/zawlinnnaing/monkey-language-in-golang/ast"
@@ -147,4 +148,59 @@ func TestIntegerLiteralExpression(t *testing.T) {
 		t.Fatalf("Expected token literal to be %s, received %s", "5", literal.TokenLiteral())
 	}
 
+}
+
+func TestPrefixExpression(t *testing.T) {
+	testCases := []struct {
+		input    string
+		operator string
+		value    int64
+	}{
+		{"!5", "!", 5},
+		{"-15", "-", 15},
+	}
+	for _, testCase := range testCases {
+		lexer := lexer.New(testCase.input)
+		parser := New(lexer)
+		program := parser.ParseProgram()
+		checkParseErrors(t, parser)
+		if len(program.Statements) != 1 {
+			t.Fatalf("Expected program statements to be 1, received %d", len(program.Statements))
+		}
+
+		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("Expected statement to be ExpressionStatement, received %T", program.Statements[0])
+		}
+
+		prefixExpr, ok := statement.Expression.(*ast.PrefixExpression)
+		if !ok {
+			t.Fatalf("Expected expression to be PrefixExpression, received %T", statement.Expression)
+		}
+
+		if prefixExpr.Operator != testCase.operator {
+			t.Fatalf("Expected operator to be %s, received %s", testCase.operator, prefixExpr.Operator)
+		}
+
+		if !testIntegerLiteral(t, prefixExpr.Right, testCase.value) {
+			return
+		}
+	}
+}
+
+func testIntegerLiteral(t *testing.T, exp ast.Expression, value int64) bool {
+	integerLiteral, ok := exp.(*ast.IntegerLiteral)
+	if !ok {
+		t.Errorf("Expected *ast.IntegerLiteral, received %T", exp)
+		return false
+	}
+	if integerLiteral.Value != value {
+		t.Errorf("Expected value to be %d, received %d", value, integerLiteral.Value)
+		return false
+	}
+	if integerLiteral.TokenLiteral() != fmt.Sprintf("%d", value) {
+		t.Errorf("Expected token literal to be %d, received %s", value, integerLiteral.TokenLiteral())
+		return false
+	}
+	return true
 }

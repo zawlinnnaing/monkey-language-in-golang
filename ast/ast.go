@@ -40,6 +40,14 @@ type Identifier struct {
 	Value string
 }
 
+func (id *Identifier) expressionNode() {}
+func (id *Identifier) TokenLiteral() string {
+	return id.Token.Literal
+}
+func (id *Identifier) String() string {
+	return id.Value
+}
+
 // IntegerLiteral implements Expression interface
 type IntegerLiteral struct {
 	Token token.Token
@@ -54,6 +62,21 @@ func (i *IntegerLiteral) String() string {
 	return i.Token.Literal
 }
 
+// PrefixExpression implements Expression Interface
+type PrefixExpression struct {
+	Token    token.Token
+	Operator string
+	Right    Expression
+}
+
+func (prefix *PrefixExpression) expressionNode() {}
+func (prefix *PrefixExpression) TokenLiteral() string {
+	return prefix.Token.Literal
+}
+func (prefix *PrefixExpression) String() string {
+	return fmt.Sprintf("(%s %s)", prefix.Operator, prefix.Right.String())
+}
+
 type LetStatement struct {
 	Token token.Token
 	Name  *Identifier
@@ -64,22 +87,12 @@ func (ls *LetStatement) statementNode() {}
 func (ls *LetStatement) TokenLiteral() string {
 	return ls.Token.Literal
 }
-
 func (ls *LetStatement) String() string {
 	value := ""
 	if ls.Value != nil {
 		value = ls.Value.String()
 	}
 	return fmt.Sprintf("%v %v = %v;", ls.Token.Literal, ls.Name.String(), value)
-}
-
-func (id *Identifier) expressionNode() {}
-func (id *Identifier) TokenLiteral() string {
-	return id.Token.Literal
-}
-
-func (id *Identifier) String() string {
-	return id.Value
 }
 
 type ReturnStatement struct {
@@ -91,7 +104,6 @@ func (rs *ReturnStatement) statementNode() {}
 func (rs *ReturnStatement) TokenLiteral() string {
 	return rs.Token.Literal
 }
-
 func (rs *ReturnStatement) String() string {
 	val := ""
 	if rs.ReturnValue != nil {
@@ -119,3 +131,4 @@ func (es *ExpressionStatement) String() string {
 
 // Compile time checks
 var _ Expression = (*Identifier)(nil)
+var _ Expression = (*IntegerLiteral)(nil)
