@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/zawlinnnaing/monkey-language-in-golang/ast"
 	"github.com/zawlinnnaing/monkey-language-in-golang/lexer"
@@ -150,6 +151,18 @@ func (p *Parser) parseIdentifier() ast.Expression {
 	return identifier
 }
 
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	literal := &ast.IntegerLiteral{Token: p.currentToken}
+	value, err := strconv.ParseInt(p.currentToken.Literal, 0, 64)
+	if err != nil {
+		errorMsg := fmt.Sprintf("could not parse %q as integer", p.currentToken.Literal)
+		p.errors = append(p.errors, errorMsg)
+		return nil
+	}
+	literal.Value = value
+	return literal
+}
+
 func (p *Parser) Errors() []string {
 	return p.errors
 }
@@ -168,6 +181,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.nextToken()
 
 	p.registerPrefixFn(token.IDENT, p.parseIdentifier)
+	p.registerPrefixFn(token.INT, p.parseIntegerLiteral)
 
 	return &p
 }

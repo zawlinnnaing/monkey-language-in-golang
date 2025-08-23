@@ -99,7 +99,7 @@ func TestReturnStatement(t *testing.T) {
 	}
 }
 
-func TestIdentifierExpress(t *testing.T) {
+func TestIdentifierExpression(t *testing.T) {
 	input := "foobar"
 
 	lexer := lexer.New(input)
@@ -119,6 +119,32 @@ func TestIdentifierExpress(t *testing.T) {
 	}
 	if ident.Token.Literal != input {
 		t.Fatalf("Expected token literal to be %v, received %v", ident.Token.Literal, input)
+	}
+
+}
+
+func TestIntegerLiteralExpression(t *testing.T) {
+	input := "5;"
+	lexer := lexer.New(input)
+	parser := New(lexer)
+	program := parser.ParseProgram()
+	if len(program.Statements) != 1 {
+		t.Fatalf("Expected program statements to be 1, received %d", len(program.Statements))
+	}
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Expected statement to be ExpressionStatement, received %T", program.Statements[0])
+	}
+
+	literal, ok := statement.Expression.(*ast.IntegerLiteral)
+	if !ok {
+		t.Fatalf("Expected expression to be IntegerLiteral, received %T", statement.Expression)
+	}
+	if literal.Value != 5 {
+		t.Fatalf("Expected value to be %d, received %d", 5, literal.Value)
+	}
+	if literal.TokenLiteral() != "5" {
+		t.Fatalf("Expected token literal to be %s, received %s", "5", literal.TokenLiteral())
 	}
 
 }
