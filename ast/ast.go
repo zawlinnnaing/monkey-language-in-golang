@@ -132,3 +132,4 @@ func (es *ExpressionStatement) String() string {
 // Compile time checks
 var _ Expression = (*Identifier)(nil)
 var _ Expression = (*IntegerLiteral)(nil)
+var _ Expression = (*PrefixExpression)(nil)
