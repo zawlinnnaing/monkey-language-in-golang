@@ -74,7 +74,23 @@ func (prefix *PrefixExpression) TokenLiteral() string {
 	return prefix.Token.Literal
 }
 func (prefix *PrefixExpression) String() string {
-	return fmt.Sprintf("(%s %s)", prefix.Operator, prefix.Right.String())
+	return fmt.Sprintf("(%s%s)", prefix.Operator, prefix.Right.String())
+}
+
+// InfixExpression implements Expression interface
+type InfixExpression struct {
+	Operator string
+	Left     Expression
+	Right    Expression
+	Token    token.Token
+}
+
+func (infix *InfixExpression) expressionNode() {}
+func (infix *InfixExpression) TokenLiteral() string {
+	return infix.Token.Literal
+}
+func (infix *InfixExpression) String() string {
+	return fmt.Sprintf("(%s %s %s)", infix.Left.String(), infix.Operator, infix.Right.String())
 }
 
 type LetStatement struct {
@@ -133,3 +149,4 @@ func (es *ExpressionStatement) String() string {
 var _ Expression = (*Identifier)(nil)
 var _ Expression = (*IntegerLiteral)(nil)
 var _ Expression = (*PrefixExpression)(nil)
+var _ Expression = (*InfixExpression)(nil)

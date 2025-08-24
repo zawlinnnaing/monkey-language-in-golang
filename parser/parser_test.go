@@ -188,6 +188,89 @@ func TestPrefixExpression(t *testing.T) {
 	}
 }
 
+func TestInfixExpression(t *testing.T) {
+	testCases := []struct {
+		input      string
+		leftValue  int64
+		operator   string
+		rightValue int64
+	}{
+		{"5 + 5;", 5, "+", 5},
+		{"5 - 5;", 5, "-", 5},
+		{"5 * 5;", 5, "*", 5},
+		{"5 / 5;", 5, "/", 5},
+		{"5 > 5;", 5, ">", 5},
+		{"5 < 5;", 5, "<", 5},
+		{"5 == 5;", 5, "==", 5},
+		{"5 != 5;", 5, "!=", 5},
+	}
+
+	for _, testCase := range testCases {
+		lexer := lexer.New(testCase.input)
+		parser := New(lexer)
+		program := parser.ParseProgram()
+		checkParseErrors(t, parser)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("Expected program statements to be 1, received %d", len(program.Statements))
+		}
+
+		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("Expected statement to be ExpressionStatement, received %T", program.Statements[0])
+		}
+
+		infixExpr, ok := statement.Expression.(*ast.InfixExpression)
+		if !ok {
+			t.Fatalf("Expected expression to be InfixExpression, received %T", statement.Expression)
+		}
+
+		if !testIntegerLiteral(t, infixExpr.Left, testCase.leftValue) {
+			return
+		}
+
+		if infixExpr.Operator != testCase.operator {
+			t.Fatalf("Expected operator to be %s, received %s", testCase.operator, infixExpr.Operator)
+		}
+
+		if !testIntegerLiteral(t, infixExpr.Right, testCase.rightValue) {
+			return
+		}
+	}
+}
+
+func TestOperatorPrecedenceString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"-a * b", "((-a) * b)"},
+		{"!-a", "(!(-a))"},
+		{"a + b + c", "((a + b) + c)"},
+		{"a + b - c", "((a + b) - c)"},
+		{"a * b * c", "((a * b) * c)"},
+		{"a * b / c", "((a * b) / c)"},
+		{"a + b / c", "(a + (b / c))"},
+		{"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
+		{"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
+		{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
+		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+	}
+
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParseErrors(t, p)
+
+		actual := program.String()
+		if actual != tt.expected {
+			t.Errorf("Expected=%q, received=%q", tt.expected, actual)
+		}
+	}
+}
+
 func testIntegerLiteral(t *testing.T, exp ast.Expression, value int64) bool {
 	integerLiteral, ok := exp.(*ast.IntegerLiteral)
 	if !ok {

@@ -13,13 +13,24 @@ import (
 const (
 	_ int = iota
 	LOWEST
-	EQUALS       // ==
+	EQUALS       // == or !=
 	LESS_GREATER // > OR <
-	SUM          // +
-	PRODUCT      // *
+	SUM          // + or -
+	PRODUCT      // * or /
 	PREFIX       // -X or !X
 	CALL         // myFunction(x)
 )
+
+var precedencesMap = map[token.TokenType]int{
+	token.EQ:       EQUALS,
+	token.NOT_EQ:   EQUALS,
+	token.PLUS:     SUM,
+	token.MINUS:    SUM,
+	token.ASTERISK: PRODUCT,
+	token.SLASH:    PRODUCT,
+	token.LT:       LESS_GREATER,
+	token.GT:       LESS_GREATER,
+}
 
 type Parser struct {
 	lexer        *lexer.Lexer
@@ -132,7 +143,16 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		p.errors = append(p.errors, errorMsg)
 		return nil
 	}
-	return prefixParsingFn()
+	left := prefixParsingFn()
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.getTokenPrecedence(p.peekToken) {
+		infixParsingFn := p.infixParsingFns[p.peekToken.Type]
+		if infixParsingFn == nil {
+			return left
+		}
+		p.nextToken()
+		left = infixParsingFn(left)
+	}
+	return left
 }
 
 func (p *Parser) peekErrors(expectTokenType token.TokenType) {
@@ -175,6 +195,26 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	return expression
 }
 
+func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	infixExpression := &ast.InfixExpression{
+		Left:     left,
+		Token:    p.currentToken,
+		Operator: p.currentToken.Literal,
+	}
+	precedence := p.getTokenPrecedence(p.currentToken)
+	p.nextToken()
+	infixExpression.Right = p.parseExpression(precedence)
+	return infixExpression
+}
+
+func (p *Parser) getTokenPrecedence(token token.Token) int {
+	precedence, ok := precedencesMap[token.Type]
+	if !ok {
+		return LOWEST
+	}
+	return precedence
+}
+
 func (p *Parser) Errors() []string {
 	return p.errors
 }
@@ -196,6 +236,15 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.INT, p.parseIntegerLiteral)
 	p.registerPrefixFn(token.BANG, p.parsePrefixExpression)
 	p.registerPrefixFn(token.MINUS, p.parsePrefixExpression)
+
+	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
+	p.registerInfixFn(token.MINUS, p.parseInfixExpression)
+	p.registerInfixFn(token.ASTERISK, p.parseInfixExpression)
+	p.registerInfixFn(token.SLASH, p.parseInfixExpression)
+	p.registerInfixFn(token.EQ, p.parseInfixExpression)
+	p.registerInfixFn(token.NOT_EQ, p.parseInfixExpression)
+	p.registerInfixFn(token.GT, p.parseInfixExpression)
+	p.registerInfixFn(token.LT, p.parseInfixExpression)
 
 	return &p
 }
