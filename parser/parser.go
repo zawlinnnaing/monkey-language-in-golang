@@ -207,6 +207,14 @@ func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
 	return infixExpression
 }
 
+func (p *Parser) parseBooleanLiteral() ast.Expression {
+	exp := &ast.BooleanLiteral{
+		Token: p.currentToken,
+		Value: p.currentTokenIs(token.TRUE),
+	}
+	return exp
+}
+
 func (p *Parser) getTokenPrecedence(token token.Token) int {
 	precedence, ok := precedencesMap[token.Type]
 	if !ok {
@@ -236,6 +244,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.INT, p.parseIntegerLiteral)
 	p.registerPrefixFn(token.BANG, p.parsePrefixExpression)
 	p.registerPrefixFn(token.MINUS, p.parsePrefixExpression)
+	p.registerPrefixFn(token.TRUE, p.parseBooleanLiteral)
+	p.registerPrefixFn(token.FALSE, p.parseBooleanLiteral)
 
 	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
 	p.registerInfixFn(token.MINUS, p.parseInfixExpression)
