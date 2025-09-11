@@ -188,57 +188,6 @@ func TestPrefixExpression(t *testing.T) {
 	}
 }
 
-func TestInfixExpression(t *testing.T) {
-	testCases := []struct {
-		input      string
-		leftValue  int64
-		operator   string
-		rightValue int64
-	}{
-		{"5 + 5;", 5, "+", 5},
-		{"5 - 5;", 5, "-", 5},
-		{"5 * 5;", 5, "*", 5},
-		{"5 / 5;", 5, "/", 5},
-		{"5 > 5;", 5, ">", 5},
-		{"5 < 5;", 5, "<", 5},
-		{"5 == 5;", 5, "==", 5},
-		{"5 != 5;", 5, "!=", 5},
-	}
-
-	for _, testCase := range testCases {
-		lexer := lexer.New(testCase.input)
-		parser := New(lexer)
-		program := parser.ParseProgram()
-		checkParseErrors(t, parser)
-
-		if len(program.Statements) != 1 {
-			t.Fatalf("Expected program statements to be 1, received %d", len(program.Statements))
-		}
-
-		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
-		if !ok {
-			t.Fatalf("Expected statement to be ExpressionStatement, received %T", program.Statements[0])
-		}
-
-		infixExpr, ok := statement.Expression.(*ast.InfixExpression)
-		if !ok {
-			t.Fatalf("Expected expression to be InfixExpression, received %T", statement.Expression)
-		}
-
-		if !testIntegerLiteral(t, infixExpr.Left, testCase.leftValue) {
-			return
-		}
-
-		if infixExpr.Operator != testCase.operator {
-			t.Fatalf("Expected operator to be %s, received %s", testCase.operator, infixExpr.Operator)
-		}
-
-		if !testIntegerLiteral(t, infixExpr.Right, testCase.rightValue) {
-			return
-		}
-	}
-}
-
 func TestOperatorPrecedenceString(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -286,4 +235,90 @@ func testIntegerLiteral(t *testing.T, exp ast.Expression, value int64) bool {
 		return false
 	}
 	return true
+}
+
+func testIdentifier(t *testing.T, exp ast.Expression, val string) bool {
+	ident, ok := exp.(*ast.Identifier)
+	if !ok {
+		t.Errorf("expected identifier, received %T", exp)
+		return false
+	}
+	if ident.Value != val {
+		t.Errorf("expected %v, received %v", val, ident.Value)
+		return false
+	}
+	if ident.TokenLiteral() != val {
+		t.Errorf("TokenLiteral, expected %v, received %v", val, ident.TokenLiteral())
+		return false
+	}
+	return true
+}
+
+func testLiteralExpression(t *testing.T, expression ast.Expression, expected any) bool {
+	switch v := expected.(type) {
+	case int:
+		return testIntegerLiteral(t, expression, int64(v))
+	case int64:
+		return testIntegerLiteral(t, expression, v)
+	case string:
+		return testIdentifier(t, expression, v)
+	}
+	t.Errorf("Unknown expected type: %T", expected)
+	return false
+}
+
+func testInfixExpression(t *testing.T, expression ast.Expression, left any, operator string, right any) bool {
+	infixExpression, ok := expression.(*ast.InfixExpression)
+	if !ok {
+		t.Errorf("Expected infix expression, received %T", expression)
+		return false
+	}
+	if !testLiteralExpression(t, infixExpression.Left, left) {
+		return false
+	}
+	if infixExpression.Operator != operator {
+		t.Errorf("Expected operator: %v, received %v", operator, infixExpression.Operator)
+		return false
+	}
+	if !testLiteralExpression(t, infixExpression.Right, right) {
+		return false
+	}
+	return true
+}
+
+func TestInfixExpression(t *testing.T) {
+	testCases := []struct {
+		input      string
+		leftValue  int64
+		operator   string
+		rightValue int64
+	}{
+		{"5 + 5;", 5, "+", 5},
+		{"5 - 5;", 5, "-", 5},
+		{"5 * 5;", 5, "*", 5},
+		{"5 / 5;", 5, "/", 5},
+		{"5 > 5;", 5, ">", 5},
+		{"5 < 5;", 5, "<", 5},
+		{"5 == 5;", 5, "==", 5},
+		{"5 != 5;", 5, "!=", 5},
+	}
+
+	for _, testCase := range testCases {
+		lexer := lexer.New(testCase.input)
+		parser := New(lexer)
+		program := parser.ParseProgram()
+		checkParseErrors(t, parser)
+
+		if len(program.Statements) != 1 {
+			t.Fatalf("Expected program statements to be 1, received %d", len(program.Statements))
+		}
+
+		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("Expected statement to be ExpressionStatement, received %T", program.Statements[0])
+		}
+		if !testInfixExpression(t, statement.Expression, testCase.leftValue, testCase.operator, testCase.rightValue) {
+			return
+		}
+	}
 }
