@@ -230,10 +230,12 @@ func TestPrefixExpression(t *testing.T) {
 	testCases := []struct {
 		input    string
 		operator string
-		value    int64
+		value    any
 	}{
 		{"!5", "!", 5},
 		{"-15", "-", 15},
+		{"!true;", "!", true},
+		{"!false", "!", false},
 	}
 	for _, testCase := range testCases {
 		lexer := lexer.New(testCase.input)
@@ -258,7 +260,7 @@ func TestPrefixExpression(t *testing.T) {
 			t.Fatalf("Expected operator to be %s, received %s", testCase.operator, prefixExpr.Operator)
 		}
 
-		if !testIntegerLiteral(t, prefixExpr.Right, testCase.value) {
+		if !testLiteralExpression(t, prefixExpr.Right, testCase.value) {
 			return
 		}
 	}
@@ -281,6 +283,15 @@ func TestOperatorPrecedenceString(t *testing.T) {
 		{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
 		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
 		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+		{"true", "true"},
+		{"false", "false"},
+		{"3 > 5 == false", "((3 > 5) == false)"},
+		{"3 < 5 == true", "((3 < 5) == true)"},
+		{"1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"},
+		{"(5 + 5)* 2", "((5 + 5) * 2)"},
+		{"2 / (5 + 5)", "(2 / (5 + 5))"},
+		{"-(5 + 5)", "(-(5 + 5))"},
+		{"!(true == true)", "(!(true == true))"},
 	}
 
 	for _, tt := range tests {
@@ -299,9 +310,9 @@ func TestOperatorPrecedenceString(t *testing.T) {
 func TestInfixExpression(t *testing.T) {
 	testCases := []struct {
 		input      string
-		leftValue  int64
+		leftValue  any
 		operator   string
-		rightValue int64
+		rightValue any
 	}{
 		{"5 + 5;", 5, "+", 5},
 		{"5 - 5;", 5, "-", 5},
@@ -311,6 +322,8 @@ func TestInfixExpression(t *testing.T) {
 		{"5 < 5;", 5, "<", 5},
 		{"5 == 5;", 5, "==", 5},
 		{"5 != 5;", 5, "!=", 5},
+		{"true != false", true, "!=", false},
+		{"true == true", true, "==", true},
 	}
 
 	for _, testCase := range testCases {

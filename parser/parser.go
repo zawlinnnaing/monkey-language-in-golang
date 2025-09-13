@@ -136,6 +136,15 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	return statement
 }
 
+func (p *Parser) parseGroupExpression() ast.Expression {
+	p.nextToken()
+	expression := p.parseExpression(LOWEST)
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return expression
+}
+
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefixParsingFn := p.prefixParsingFns[p.currentToken.Type]
 	if prefixParsingFn == nil {
@@ -246,6 +255,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefixFn(token.TRUE, p.parseBooleanLiteral)
 	p.registerPrefixFn(token.FALSE, p.parseBooleanLiteral)
+	p.registerPrefixFn(token.LPAREN, p.parseGroupExpression)
 
 	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
 	p.registerInfixFn(token.MINUS, p.parseInfixExpression)
