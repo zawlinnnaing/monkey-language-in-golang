@@ -158,8 +158,56 @@ func (es *ExpressionStatement) String() string {
 	return val
 }
 
+type IfExpression struct {
+	Token       token.Token // 'If' token
+	Condition   Expression
+	Consequence *BlockStatement
+	Alternative *BlockStatement
+}
+
+func (ie *IfExpression) expressionNode() {}
+func (ie *IfExpression) TokenLiteral() string {
+	return ie.Token.Literal
+}
+func (ie *IfExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("if")
+	out.WriteString(ie.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(ie.Condition.String())
+
+	if ie.Alternative != nil {
+		out.WriteString("else")
+		out.WriteString(ie.Alternative.String())
+	}
+
+	return out.String()
+}
+
+type BlockStatement struct {
+	Token      token.Token // '{' token
+	Statements []Statement
+}
+
+func (bs *BlockStatement) statementNode() {}
+func (bs *BlockStatement) TokenLiteral() string {
+	return bs.Token.Literal
+}
+
+func (bs *BlockStatement) String() string {
+	var out bytes.Buffer
+
+	for _, statement := range bs.Statements {
+		out.WriteString(statement.String())
+	}
+
+	return out.String()
+}
+
 // Compile time checks
 var _ Expression = (*Identifier)(nil)
 var _ Expression = (*IntegerLiteral)(nil)
 var _ Expression = (*PrefixExpression)(nil)
 var _ Expression = (*InfixExpression)(nil)
+var _ Expression = (*IfExpression)(nil)
+var _ Statement = (*BlockStatement)(nil)

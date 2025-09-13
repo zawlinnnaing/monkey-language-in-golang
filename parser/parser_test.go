@@ -8,6 +8,15 @@ import (
 	"github.com/zawlinnnaing/monkey-language-in-golang/lexer"
 )
 
+func testExpressionStatement(t *testing.T, statement ast.Statement) bool {
+	_, ok := statement.(*ast.ExpressionStatement)
+	if !ok {
+		t.Errorf("Expected *ast.ExpressionStatement, received %T", statement)
+		return false
+	}
+	return true
+}
+
 func testIntegerLiteral(t *testing.T, exp ast.Expression, value int64) bool {
 	integerLiteral, ok := exp.(*ast.IntegerLiteral)
 	if !ok {
@@ -370,5 +379,76 @@ func TestBooleanLiteralExpression(t *testing.T) {
 			t.Fatalf("Expected statement, received %T", program.Statements[0])
 		}
 		testBooleanLiteral(t, statement.Expression, tt.expectedBoolean)
+	}
+}
+
+func TestConditionalExpression(t *testing.T) {
+	testCases := []struct {
+		input             string
+		expectedCondition [3]string
+		consequence       string
+		alternative       string
+	}{
+		{
+			input:             "if (x < y) { x }",
+			expectedCondition: [3]string{"x", "<", "y"},
+			consequence:       "x",
+			alternative:       "",
+		},
+		{
+			input:             "if (x < y) { x } else { y }",
+			expectedCondition: [3]string{"x", "<", "y"},
+			consequence:       "x",
+			alternative:       "y",
+		},
+	}
+	for _, testCase := range testCases {
+		lexer := lexer.New(testCase.input)
+		parser := New(lexer)
+		program := parser.ParseProgram()
+		checkParseErrors(t, parser)
+		if len(program.Statements) != 1 {
+			t.Fatalf("Expected program statements to be %d, received %d", 1, len(program.Statements))
+		}
+		statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			t.Fatalf("Expected statement, received %T", program.Statements[0])
+		}
+		ifExpression, ok := statement.Expression.(*ast.IfExpression)
+		if !ok {
+			t.Fatalf("Expected if statement, received %T", statement.Expression)
+		}
+		if !testInfixExpression(t, ifExpression.Condition, testCase.expectedCondition[0], testCase.expectedCondition[1], testCase.expectedCondition[2]) {
+			return
+		}
+
+		if len(ifExpression.Consequence.Statements) != 1 {
+			t.Fatalf("Expected consequence statements to be %d, received %d", 1, len(ifExpression.Consequence.Statements))
+		}
+
+		if !testExpressionStatement(t, ifExpression.Consequence.Statements[0]) {
+			return
+		}
+
+		consequenceStatement, _ := ifExpression.Consequence.Statements[0].(*ast.ExpressionStatement)
+
+		if !testLiteralExpression(t, consequenceStatement.Expression, testCase.consequence) {
+			return
+		}
+
+		if testCase.alternative != "" {
+			if !testExpressionStatement(t, ifExpression.Alternative.Statements[0]) {
+				return
+			}
+			alternativeStatement, _ := ifExpression.Alternative.Statements[0].(*ast.ExpressionStatement)
+			if !testLiteralExpression(t, alternativeStatement.Expression, testCase.alternative) {
+				return
+			}
+		} else {
+			if ifExpression.Alternative != nil {
+				t.Fatalf("Expected empty alternative, received %v", ifExpression.Alternative)
+			}
+		}
+
 	}
 }

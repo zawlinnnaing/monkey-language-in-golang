@@ -164,6 +164,56 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	return left
 }
 
+func (p *Parser) parseIfExpression() ast.Expression {
+	expression := &ast.IfExpression{
+		Token: p.currentToken,
+	}
+
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+	p.nextToken()
+	expression.Condition = p.parseExpression(LOWEST)
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+	expression.Consequence = p.parseBlockStatements()
+
+	if p.peekTokenIs(token.ELSE) {
+		p.nextToken()
+
+		if !p.expectPeek(token.LBRACE) {
+			return nil
+		}
+		expression.Alternative = p.parseBlockStatements()
+	}
+
+	return expression
+}
+
+func (p *Parser) parseBlockStatements() *ast.BlockStatement {
+
+	blockStatement := &ast.BlockStatement{
+		Token:      p.currentToken,
+		Statements: []ast.Statement{},
+	}
+
+	p.nextToken()
+	for !p.currentTokenIs(token.RBRACE) && !p.currentTokenIs(token.EOF) {
+		statement := p.parseStatement()
+		if statement != nil {
+			blockStatement.Statements = append(blockStatement.Statements, statement)
+		}
+		p.nextToken()
+	}
+
+	return blockStatement
+}
+
 func (p *Parser) peekErrors(expectTokenType token.TokenType) {
 	msg := fmt.Sprintf("expected next token to be %s, got %s instead", expectTokenType, p.peekToken.Type)
 	p.errors = append(p.errors, msg)
@@ -256,6 +306,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.TRUE, p.parseBooleanLiteral)
 	p.registerPrefixFn(token.FALSE, p.parseBooleanLiteral)
 	p.registerPrefixFn(token.LPAREN, p.parseGroupExpression)
+	p.registerPrefixFn(token.IF, p.parseIfExpression)
 
 	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
 	p.registerInfixFn(token.MINUS, p.parseInfixExpression)
