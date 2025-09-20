@@ -301,6 +301,13 @@ func TestOperatorPrecedenceString(t *testing.T) {
 		{"2 / (5 + 5)", "(2 / (5 + 5))"},
 		{"-(5 + 5)", "(-(5 + 5))"},
 		{"!(true == true)", "(!(true == true))"},
+		{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
+		{"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+			"add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+		{
+			"add(a + b + c * d / f + g)",
+			"add((((a + b) + ((c * d) / f)) + g))",
+		},
 	}
 
 	for _, tt := range tests {
@@ -524,4 +531,30 @@ func TestFunctionParametersParsing(t *testing.T) {
 			testLiteralExpression(t, functionLiteral.Parameters[i], param)
 		}
 	}
+}
+
+func TestCallExpressionParsing(t *testing.T) {
+	input := "add(1, 2 * 3, 4 + 5);"
+	lexer := lexer.New(input)
+	parser := New(lexer)
+	program := parser.ParseProgram()
+	checkParseErrors(t, parser)
+	if len(program.Statements) != 1 {
+		t.Fatalf("Expected program statements to have length: %d, received %d", 1, len(program.Statements))
+	}
+	testExpressionStatement(t, program.Statements[0])
+	expressionStatement := program.Statements[0].(*ast.ExpressionStatement)
+	callExpressionStatement, ok := expressionStatement.Expression.(*ast.CallExpression)
+	if !ok {
+		t.Fatalf("Expected call expression statement, recevied %T", expressionStatement.Expression)
+	}
+	if !testIdentifier(t, callExpressionStatement.Function, "add") {
+		return
+	}
+	if len(callExpressionStatement.Arguments) != 3 {
+		t.Fatalf("Expected arguments to be %d, received %d", 3, len(callExpressionStatement.Arguments))
+	}
+	testLiteralExpression(t, callExpressionStatement.Arguments[0], 1)
+	testInfixExpression(t, callExpressionStatement.Arguments[1], 2, "*", 3)
+	testInfixExpression(t, callExpressionStatement.Arguments[2], 4, "+", 5)
 }

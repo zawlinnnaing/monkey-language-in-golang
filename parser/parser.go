@@ -30,6 +30,7 @@ var precedencesMap = map[token.TokenType]int{
 	token.SLASH:    PRODUCT,
 	token.LT:       LESS_GREATER,
 	token.GT:       LESS_GREATER,
+	token.LPAREN:   CALL,
 }
 
 type Parser struct {
@@ -317,6 +318,32 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	return identifiers
 }
 
+func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
+	exp := &ast.CallExpression{Token: p.currentToken, Function: function}
+	exp.Arguments = p.parseArguments()
+	return exp
+}
+
+func (p *Parser) parseArguments() []ast.Expression {
+	args := []ast.Expression{}
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return args
+	}
+	p.nextToken()
+	args = append(args, p.parseExpression(LOWEST))
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		args = append(args, p.parseExpression(LOWEST))
+	}
+
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	return args
+}
+
 func (p *Parser) getTokenPrecedence(token token.Token) int {
 	precedence, ok := precedencesMap[token.Type]
 	if !ok {
@@ -360,6 +387,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfixFn(token.NOT_EQ, p.parseInfixExpression)
 	p.registerInfixFn(token.GT, p.parseInfixExpression)
 	p.registerInfixFn(token.LT, p.parseInfixExpression)
+	p.registerInfixFn(token.LPAREN, p.parseCallExpression)
 
 	return &p
 }

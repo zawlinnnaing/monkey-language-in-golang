@@ -231,6 +231,30 @@ func (fl *FunctionLiteral) String() string {
 	return out.String()
 }
 
+type CallExpression struct {
+	Token     token.Token // "(" token
+	Function  Expression  // Identifier or FunctionLiteral
+	Arguments []Expression
+}
+
+func (ce *CallExpression) expressionNode() {}
+func (ce *CallExpression) TokenLiteral() string {
+	return ce.Token.Literal
+}
+func (ce *CallExpression) String() string {
+	var out bytes.Buffer
+	args := []string{}
+	for _, arg := range ce.Arguments {
+		args = append(args, arg.String())
+	}
+	out.WriteString(ce.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(")")
+
+	return out.String()
+}
+
 // Compile time checks
 var _ Expression = (*Identifier)(nil)
 var _ Expression = (*IntegerLiteral)(nil)
@@ -239,3 +263,4 @@ var _ Expression = (*InfixExpression)(nil)
 var _ Expression = (*IfExpression)(nil)
 var _ Statement = (*BlockStatement)(nil)
 var _ Expression = (*FunctionLiteral)(nil)
+var _ Expression = (*CallExpression)(nil)
