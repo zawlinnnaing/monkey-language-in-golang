@@ -83,6 +83,9 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	return statement
 }
 
+/*
+Check whether peek token is of expected type. If it is, move current token to next
+*/
 func (p *Parser) expectPeek(tokenType token.TokenType) bool {
 	if p.peekTokenIs(tokenType) {
 		p.nextToken()
@@ -274,6 +277,46 @@ func (p *Parser) parseBooleanLiteral() ast.Expression {
 	return exp
 }
 
+func (p *Parser) parseFunctionLiteral() ast.Expression {
+	functionLiteral := &ast.FunctionLiteral{
+		Token: p.currentToken,
+	}
+	if !p.expectPeek(token.LPAREN) {
+		return nil
+	}
+	functionLiteral.Parameters = p.parseFunctionParameters()
+	if !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+	functionLiteral.Body = p.parseBlockStatements()
+	return functionLiteral
+}
+
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+	identifiers := []*ast.Identifier{}
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return identifiers
+	}
+
+	p.nextToken()
+	identifiers = append(identifiers, p.parseIdentifier().(*ast.Identifier))
+	for p.peekTokenIs(token.COMMA) {
+		// Skips comma and reaches next parameter
+		p.nextToken()
+		p.nextToken()
+
+		identifiers = append(identifiers, p.parseIdentifier().(*ast.Identifier))
+	}
+
+	if !p.expectPeek(token.RPAREN) {
+		// After parsing all parameters, if right paren is not found, parse error
+		return nil
+	}
+
+	return identifiers
+}
+
 func (p *Parser) getTokenPrecedence(token token.Token) int {
 	precedence, ok := precedencesMap[token.Type]
 	if !ok {
@@ -307,6 +350,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.FALSE, p.parseBooleanLiteral)
 	p.registerPrefixFn(token.LPAREN, p.parseGroupExpression)
 	p.registerPrefixFn(token.IF, p.parseIfExpression)
+	p.registerPrefixFn(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
 	p.registerInfixFn(token.MINUS, p.parseInfixExpression)

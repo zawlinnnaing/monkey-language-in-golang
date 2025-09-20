@@ -3,6 +3,7 @@ package ast
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/zawlinnnaing/monkey-language-in-golang/token"
 )
@@ -204,6 +205,32 @@ func (bs *BlockStatement) String() string {
 	return out.String()
 }
 
+type FunctionLiteral struct {
+	Token      token.Token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (fl *FunctionLiteral) expressionNode() {}
+func (fl *FunctionLiteral) TokenLiteral() string {
+	return fl.Token.Literal
+}
+func (fl *FunctionLiteral) String() string {
+	var out bytes.Buffer
+
+	params := []string{}
+	for _, p := range fl.Parameters {
+		params = append(params, p.String())
+	}
+	out.WriteString(fl.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(")")
+	out.WriteString(fl.Body.String())
+
+	return out.String()
+}
+
 // Compile time checks
 var _ Expression = (*Identifier)(nil)
 var _ Expression = (*IntegerLiteral)(nil)
@@ -211,3 +238,4 @@ var _ Expression = (*PrefixExpression)(nil)
 var _ Expression = (*InfixExpression)(nil)
 var _ Expression = (*IfExpression)(nil)
 var _ Statement = (*BlockStatement)(nil)
+var _ Expression = (*FunctionLiteral)(nil)

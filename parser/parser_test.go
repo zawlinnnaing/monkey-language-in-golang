@@ -11,7 +11,7 @@ import (
 func testExpressionStatement(t *testing.T, statement ast.Statement) bool {
 	_, ok := statement.(*ast.ExpressionStatement)
 	if !ok {
-		t.Errorf("Expected *ast.ExpressionStatement, received %T", statement)
+		t.Fatalf("Expected *ast.ExpressionStatement, received %T", statement)
 		return false
 	}
 	return true
@@ -450,5 +450,78 @@ func TestConditionalExpression(t *testing.T) {
 			}
 		}
 
+	}
+}
+
+func TestFunctionLiteralParsing(t *testing.T) {
+	input := "fn(x, y) { x + y; }"
+	lexer := lexer.New(input)
+	parser := New(lexer)
+	program := parser.ParseProgram()
+	checkParseErrors(t, parser)
+	if len(program.Statements) != 1 {
+		t.Fatalf("Expected program statements to be %d, received %d", 1, len(program.Statements))
+	}
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Expected expression statement, received %T", program.Statements[0])
+	}
+
+	functionLiteral, ok := statement.Expression.(*ast.FunctionLiteral)
+	if !ok {
+		t.Fatalf("Expected function literal, received %T", statement.Expression)
+	}
+	if len(functionLiteral.Parameters) != 2 {
+		t.Fatalf("Expected number of parameters %d, received %d", 2, len(functionLiteral.Parameters))
+	}
+
+	testLiteralExpression(t, functionLiteral.Parameters[0], "x")
+	testLiteralExpression(t, functionLiteral.Parameters[1], "y")
+
+	if len(functionLiteral.Body.Statements) != 1 {
+		t.Fatalf("Expected body statements to be %d, received %d", len(functionLiteral.Body.Statements), 1)
+	}
+	testExpressionStatement(t, functionLiteral.Body.Statements[0])
+	bodyStatement, _ := functionLiteral.Body.Statements[0].(*ast.ExpressionStatement)
+	testInfixExpression(t, bodyStatement.Expression, "x", "+", "y")
+}
+
+func TestFunctionParametersParsing(t *testing.T) {
+	testCases := []struct {
+		input          string
+		expectedParams []string
+	}{
+		{
+			input:          "fn() {}",
+			expectedParams: []string{},
+		},
+		{
+			input:          "fn(x) {}",
+			expectedParams: []string{"x"},
+		},
+		{
+			input:          "fn(x, y, z) {}",
+			expectedParams: []string{"x", "y", "z"},
+		},
+	}
+
+	for _, testCase := range testCases {
+		lexer := lexer.New(testCase.input)
+		parser := New(lexer)
+		program := parser.ParseProgram()
+		checkParseErrors(t, parser)
+
+		testExpressionStatement(t, program.Statements[0])
+		statement := program.Statements[0].(*ast.ExpressionStatement)
+		functionLiteral := statement.Expression.(*ast.FunctionLiteral)
+
+		if len(functionLiteral.Parameters) != len(testCase.expectedParams) {
+			t.Errorf("Expected %d parameters, received %d", len(testCase.expectedParams), len(functionLiteral.Parameters))
+		}
+
+		for i, param := range testCase.expectedParams {
+			testLiteralExpression(t, functionLiteral.Parameters[i], param)
+		}
 	}
 }
