@@ -34,6 +34,13 @@ func (p *Program) String() string {
 	}
 	return out.String()
 }
+func (p *Program) TokenLiteral() string {
+	output := ""
+	for _, stmt := range p.Statements {
+		output += fmt.Sprintf("%s\n", stmt.TokenLiteral())
+	}
+	return output
+}
 
 // Identifier implements Expression interface
 type Identifier struct {

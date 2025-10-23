@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/zawlinnnaing/monkey-language-in-golang/evaluator"
 	"github.com/zawlinnnaing/monkey-language-in-golang/lexer"
 	"github.com/zawlinnnaing/monkey-language-in-golang/parser"
 )
@@ -56,10 +57,14 @@ func Start(in io.Reader, out io.Writer) {
 
 		if len(parser.Errors()) > 0 {
 			printParserErrors(out, parser.Errors())
+			// Stop further evaluation if there are parser errors
 			continue
 		}
+		evaluated := evaluator.Eval(program)
 
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
+		if evaluated != nil {
+			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
