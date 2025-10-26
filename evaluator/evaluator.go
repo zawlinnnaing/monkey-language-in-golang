@@ -24,8 +24,89 @@ func Eval(node ast.Node) object.Object {
 	case *ast.PrefixExpression:
 		right := Eval(n.Right)
 		return evalPrefixExpression(n.Operator, right)
+	case *ast.InfixExpression:
+		left := Eval(n.Left)
+		right := Eval(n.Right)
+		return evalInfixExpression(n.Operator, left, right)
+	case *ast.IfExpression:
+		return evalIfExpression(n)
+	case *ast.BlockStatement:
+		return evalStatements(n.Statements)
 	}
 	return nil
+}
+
+func evalIfExpression(node *ast.IfExpression) object.Object {
+	condition := Eval(node.Condition)
+	if isTruthy(condition) {
+		return Eval(node.Consequence)
+	} else if node.Alternative != nil {
+		return Eval(node.Alternative)
+	}
+	return NULL
+}
+
+func evalInfixExpression(operator string, left, right object.Object) object.Object {
+	switch {
+	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
+		return evalIntegerInfixExpression(operator, left, right)
+	case operator == "==":
+		return object.NewBoolean(left == right)
+	case operator == "!=":
+		return object.NewBoolean(left != right)
+	default:
+		// Temporarily return NULL
+		return NULL
+	}
+
+}
+
+func evalIntegerInfixExpression(operator string, left, right object.Object) object.Object {
+	leftVal := left.(*object.Integer).Value
+	rightVal := right.(*object.Integer).Value
+	switch operator {
+	case "+":
+		return &object.Integer{Value: leftVal + rightVal}
+	case "-":
+		return &object.Integer{Value: leftVal - rightVal}
+	case "*":
+		return &object.Integer{Value: leftVal * rightVal}
+	case "/":
+		return &object.Integer{Value: leftVal / rightVal}
+	case "<":
+		if leftVal < rightVal {
+			return TRUE
+		}
+		return FALSE
+	case ">":
+		if leftVal > rightVal {
+			return TRUE
+		}
+		return FALSE
+	case "==":
+		if leftVal == rightVal {
+			return TRUE
+		}
+		return FALSE
+	case "!=":
+		if leftVal != rightVal {
+			return TRUE
+		}
+		return FALSE
+	case ">=":
+		if leftVal >= rightVal {
+			return TRUE
+		}
+		return FALSE
+	case "<=":
+		if leftVal <= rightVal {
+			return TRUE
+		}
+		return FALSE
+	default:
+		// Temporarily return NULL for unsupported operators
+		return NULL
+	}
 }
 
 func evalBooleanLiteral(node *ast.BooleanLiteral) object.Object {
@@ -81,5 +162,16 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 		return TRUE
 	default:
 		return FALSE
+	}
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj {
+	case TRUE:
+		return true
+	case NULL, FALSE:
+		return false
+	default:
+		return true
 	}
 }

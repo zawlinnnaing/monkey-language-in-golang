@@ -47,6 +47,10 @@ func (n *Null) Inspect() string {
 	return "null"
 }
 
+func NewBoolean(b bool) *Boolean {
+	return &Boolean{Value: b}
+}
+
 // Compile time checks
 
 var _ Object = (*Integer)(nil)
