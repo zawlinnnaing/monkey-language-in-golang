@@ -1,8 +1,6 @@
 {
   "github.copilot.enable": {
-    "*": false,
-    "go": false,
-    "**/*_test.go": true,
+    "*": true,
     "plaintext": false,
     "markdown": false,
     "scminput": false

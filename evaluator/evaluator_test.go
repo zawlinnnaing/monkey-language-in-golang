@@ -155,3 +155,20 @@ func TestEvalIfElseExpression(t *testing.T) {
 		}
 	}
 }
+
+func TestReturnStatement(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected int64
+	}{
+		{"return 10;", 10},
+		{"return 10; 9;", 10},
+		{"return 2 * 5; 9;", 10},
+		{"9; return 2 * 5; 9;", 10},
+		{` if (10 > 1) { if (10 > 1) { return 10; } return 1; }`, 10},
+	}
+	for _, testCase := range testCases {
+		evaluated := testEval(testCase.input)
+		testIntegerObject(t, evaluated, testCase.expected)
+	}
+}
