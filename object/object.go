@@ -9,6 +9,7 @@ const (
 	BOOLEAN_OBJ      = "BOOLEAN"
 	NULL_OBJ         = "NULL"
 	RETURN_VALUE_OBJ = "RETURN_VALUES"
+	ERROR_OBJ        = "ERROR"
 )
 
 type Object interface {
@@ -63,9 +64,25 @@ func (rv *ReturnValue) Inspect() string {
 	return rv.Value.Inspect()
 }
 
+type Error struct {
+	Message string
+}
+
+func (e *Error) Type() ObjectType {
+	return ERROR_OBJ
+}
+func (e *Error) Inspect() string {
+	return "ERROR: " + e.Message
+}
+
+func NewError(format string, a ...interface{}) *Error {
+	return &Error{Message: fmt.Sprintf(format, a...)}
+}
+
 // Compile time checks
 
 var _ Object = (*Integer)(nil)
 var _ Object = (*Boolean)(nil)
 var _ Object = (*Null)(nil)
 var _ Object = (*ReturnValue)(nil)
+var _ Object = (*Error)(nil)
