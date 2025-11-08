@@ -7,6 +7,7 @@ import (
 
 	"github.com/zawlinnnaing/monkey-language-in-golang/evaluator"
 	"github.com/zawlinnnaing/monkey-language-in-golang/lexer"
+	"github.com/zawlinnnaing/monkey-language-in-golang/object"
 	"github.com/zawlinnnaing/monkey-language-in-golang/parser"
 )
 
@@ -41,6 +42,7 @@ func printParserErrors(out io.Writer, errors []string) {
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 
 	for {
 		fmt.Fprint(out, PROMPT)
@@ -60,7 +62,7 @@ func Start(in io.Reader, out io.Writer) {
 			// Stop further evaluation if there are parser errors
 			continue
 		}
-		evaluated := evaluator.Eval(program)
+		evaluated := evaluator.Eval(program, env)
 
 		if evaluated != nil {
 			io.WriteString(out, evaluated.Inspect())
