@@ -45,6 +45,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfExpression(n, env)
 	case *ast.BlockStatement:
 		return evalBlockStatement(n, env)
+	case *ast.FunctionLiteral:
+		return evalFunctionLiteral(n, env)
+	case *ast.CallExpression:
+		return evalCallExpression(n, env)
 	case *ast.ReturnStatement:
 		val := Eval(n.ReturnValue, env)
 		if isError(val) {
@@ -52,6 +56,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		return &object.ReturnValue{Value: val}
 	}
+
 	return nil
 }
 
@@ -220,6 +225,79 @@ func evalBangOperatorExpression(right object.Object) object.Object {
 	default:
 		return FALSE
 	}
+}
+
+func evalFunctionLiteral(node *ast.FunctionLiteral, env *object.Environment) *object.Function {
+	return &object.Function{
+		Parameters: node.Parameters,
+		Body:       node.Body,
+		Env:        env,
+	}
+}
+
+func evalCallExpression(node *ast.CallExpression, env *object.Environment) object.Object {
+	evaluated := Eval(node.Function, env)
+	if isError(evaluated) {
+		return evaluated
+	}
+
+	function, ok := evaluated.(*object.Function)
+	if !ok {
+		return object.NewError("not a function: %s", evaluated.Type())
+	}
+
+	evaluatedArgs := evalExpressions(node.Arguments, env)
+	if len(evaluatedArgs) == 1 && isError(evaluatedArgs[0]) {
+		return evaluatedArgs[0]
+	}
+
+	argErr := validateFunctionArguments(function, evaluatedArgs)
+	if argErr != nil {
+		return argErr
+	}
+	return applyFunction(function, evaluatedArgs)
+}
+
+func validateFunctionArguments(fn *object.Function, args []object.Object) *object.Error {
+	// TODO: add support for optional parameters later
+	if len(args) != len(fn.Parameters) {
+		return object.NewError("arguments mismatch. Defined %d, received: %d", len(fn.Parameters), len(args))
+	}
+	return nil
+}
+
+func applyFunction(function *object.Function, args []object.Object) object.Object {
+	extendedEnv := extendEnv(function, args)
+	evaluated := Eval(function.Body, extendedEnv)
+	return unwrappedReturnValue(evaluated)
+}
+
+func extendEnv(fn *object.Function, args []object.Object) *object.Environment {
+	env := object.NewEnclosedEnvironment(fn.Env)
+	for idx, param := range fn.Parameters {
+		env.Set(param.Value, args[idx])
+	}
+	return env
+}
+
+func unwrappedReturnValue(obj object.Object) object.Object {
+	returnObj, ok := obj.(*object.ReturnValue)
+	if ok {
+		return returnObj.Value
+	}
+	return obj
+}
+
+func evalExpressions(expressions []ast.Expression, env *object.Environment) []object.Object {
+	var results []object.Object
+	for _, expression := range expressions {
+		evaluated := Eval(expression, env)
+		if isError(evaluated) {
+			return []object.Object{evaluated}
+		}
+		results = append(results, evaluated)
+	}
+	return results
 }
 
 func isTruthy(obj object.Object) bool {
