@@ -33,3 +33,4 @@ The Monkey language specification and examples can be found in the test files th
 - [ ] Add support for `<=` and `>=` infix operators
 - [ ] Add stacktrace on errors
 - [ ] Add support for optional function parameters
+- [ ] Extend interpreter to read from a file and executes the code inside it. Eg, `go run command.go test.monkey`
