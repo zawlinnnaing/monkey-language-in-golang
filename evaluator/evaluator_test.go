@@ -78,14 +78,22 @@ func TestEvalIntegerExpression(t *testing.T) {
 }
 
 func TestEvalStringExpression(t *testing.T) {
-	input := `"Hello World!"`
-	evaluated := testEval(input)
-	str, ok := evaluated.(*object.String)
-	if !ok {
-		t.Fatalf("object is not String. got=%T (%+v)", evaluated, evaluated)
+	testCases := []struct {
+		input    string
+		expected string
+	}{
+		{`"Hello World!"`, "Hello World!"},
+		{`"hello" + " " + "world"`, "hello world"},
 	}
-	if str.Value != "Hello World!" {
-		t.Errorf("String has wrong value. got=%q", str.Value)
+	for _, testCase := range testCases {
+		evaluated := testEval(testCase.input)
+		str, ok := evaluated.(*object.String)
+		if !ok {
+			t.Fatalf("object is not String. got=%T (%+v)", evaluated, evaluated)
+		}
+		if str.Value != testCase.expected {
+			t.Errorf("String has wrong value. got=%q, expected=%q", str.Value, testCase.expected)
+		}
 	}
 }
 
@@ -238,6 +246,10 @@ func TestErrorHandling(t *testing.T) {
 		{
 			"let f = fn(x) { x; }; f(1, 2, 3);",
 			"arguments mismatch. Defined 1, received: 3",
+		},
+		{
+			`"hello" - "world"`,
+			"unknown operator: STRING - STRING",
 		},
 	}
 	for _, testCase := range testCases {
