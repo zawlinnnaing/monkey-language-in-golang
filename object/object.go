@@ -13,6 +13,7 @@ type ObjectType string
 const (
 	INTEGER_OBJ      = "INTEGER"
 	BOOLEAN_OBJ      = "BOOLEAN"
+	STRING_OBJ       = "STRING"
 	NULL_OBJ         = "NULL"
 	RETURN_VALUE_OBJ = "RETURN_VALUES"
 	ERROR_OBJ        = "ERROR"
@@ -114,6 +115,17 @@ func (f *Function) Inspect() string {
 	return out.String()
 }
 
+type String struct {
+	Value string
+}
+
+func (s *String) Type() ObjectType {
+	return STRING_OBJ
+}
+func (s *String) Inspect() string {
+	return s.Value
+}
+
 // Compile time checks
 
 var _ Object = (*Integer)(nil)
@@ -122,3 +134,4 @@ var _ Object = (*Null)(nil)
 var _ Object = (*ReturnValue)(nil)
 var _ Object = (*Error)(nil)
 var _ Object = (*Function)(nil)
+var _ Object = (*String)(nil)

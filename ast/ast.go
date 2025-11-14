@@ -262,6 +262,19 @@ func (ce *CallExpression) String() string {
 	return out.String()
 }
 
+type StringLiteral struct {
+	Token token.Token
+	Value string
+}
+
+func (s *StringLiteral) TokenLiteral() string {
+	return s.Token.Literal
+}
+func (s *StringLiteral) String() string {
+	return s.TokenLiteral()
+}
+func (s *StringLiteral) expressionNode() {}
+
 // Compile time checks
 var _ Expression = (*Identifier)(nil)
 var _ Expression = (*IntegerLiteral)(nil)
@@ -272,3 +285,4 @@ var _ Statement = (*BlockStatement)(nil)
 var _ Expression = (*FunctionLiteral)(nil)
 var _ Expression = (*CallExpression)(nil)
 var _ Node = (*Identifier)(nil)
+var _ Expression = (*StringLiteral)(nil)

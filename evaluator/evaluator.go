@@ -23,6 +23,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: n.Value}
 	case *ast.BooleanLiteral:
 		return evalBooleanLiteral(n)
+	case *ast.StringLiteral:
+		return &object.String{Value: n.Value}
 	case *ast.LetStatement:
 		return evalLetStatement(n, env)
 	case *ast.PrefixExpression:

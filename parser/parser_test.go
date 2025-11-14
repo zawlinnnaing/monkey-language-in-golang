@@ -260,6 +260,32 @@ func TestIntegerLiteralExpression(t *testing.T) {
 	}
 }
 
+func TestStringLiteralExpression(t *testing.T) {
+	input := `"hello world"`
+	lexer := lexer.New(input)
+	parser := New(lexer)
+	program := parser.ParseProgram()
+	checkParseErrors(t, parser)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Expected program statements to be 1, received %d", len(program.Statements))
+	}
+
+	statement, ok := program.Statements[0].(*ast.ExpressionStatement)
+	if !ok {
+		t.Fatalf("Expected expression statement, received %T", program.Statements[0])
+	}
+
+	stringLiteral, ok := statement.Expression.(*ast.StringLiteral)
+	if !ok {
+		t.Fatalf("Expected string literal, received %T", statement.Expression)
+	}
+
+	if stringLiteral.Value != "hello world" {
+		t.Errorf("Expected string value to be %q, received %q", "hello world", stringLiteral.Value)
+	}
+}
+
 func TestPrefixExpression(t *testing.T) {
 	testCases := []struct {
 		input    string

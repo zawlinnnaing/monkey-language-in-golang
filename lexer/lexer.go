@@ -21,6 +21,19 @@ func (l *Lexer) readChar() {
 	l.readPosition += 1
 }
 
+func (l *Lexer) readString() string {
+	// Skipping opening double quote
+	startStringPosition := l.position + 1
+	for {
+		l.readChar()
+		if l.ch == '"' || l.ch == 0 {
+			break
+		}
+	}
+	// Doesn't include end double quote
+	return l.input[startStringPosition:l.position]
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -35,6 +48,9 @@ func (l *Lexer) NextToken() token.Token {
 		} else {
 			tok = *token.New(token.ASSIGN, string(l.ch))
 		}
+	case '"':
+		tok.Type = token.STRING
+		tok.Literal = l.readString()
 	case '+':
 		tok = *token.New(token.PLUS, string(l.ch))
 	case ',':

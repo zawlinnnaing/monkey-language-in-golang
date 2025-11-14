@@ -21,7 +21,10 @@ return false; }
 
 10 == 10;
 
-10 != 9;`
+10 != 9;
+"foobar";
+"foo bar";
+`
 	expected := []struct {
 		expectedTokenType token.TokenType
 		expectedLiteral   string
@@ -98,6 +101,10 @@ return false; }
 		{token.INT, "10"},
 		{token.NOT_EQ, "!="},
 		{token.INT, "9"},
+		{token.SEMICOLON, ";"},
+		{token.STRING, "foobar"},
+		{token.SEMICOLON, ";"},
+		{token.STRING, "foo bar"},
 		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
