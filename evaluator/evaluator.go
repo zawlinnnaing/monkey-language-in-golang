@@ -64,10 +64,14 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
 	val, ok := env.Get(node.Value)
-	if !ok {
-		return object.NewError("identifier not found: %s", node.Value)
+	if ok {
+		return val
 	}
-	return val
+	builtInObj, ok := builtInEnvironment[node.Value]
+	if ok {
+		return builtInObj
+	}
+	return object.NewError("Identifier not found: %s", node.Value)
 }
 
 func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Object {
@@ -255,21 +259,27 @@ func evalCallExpression(node *ast.CallExpression, env *object.Environment) objec
 		return evaluated
 	}
 
-	function, ok := evaluated.(*object.Function)
-	if !ok {
-		return object.NewError("not a function: %s", evaluated.Type())
-	}
-
 	evaluatedArgs := evalExpressions(node.Arguments, env)
 	if len(evaluatedArgs) == 1 && isError(evaluatedArgs[0]) {
 		return evaluatedArgs[0]
 	}
 
-	argErr := validateFunctionArguments(function, evaluatedArgs)
-	if argErr != nil {
-		return argErr
+	switch function := evaluated.(type) {
+	case *object.Function:
+		{
+			argErr := validateFunctionArguments(function, evaluatedArgs)
+			if argErr != nil {
+				return argErr
+			}
+			return applyFunction(function, evaluatedArgs)
+		}
+	case *object.BuiltIn:
+		{
+			return function.Fn(evaluatedArgs...)
+		}
+	default:
+		return object.NewError("not a function: %s", evaluated.Type())
 	}
-	return applyFunction(function, evaluatedArgs)
 }
 
 func validateFunctionArguments(fn *object.Function, args []object.Object) *object.Error {

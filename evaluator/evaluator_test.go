@@ -351,3 +351,32 @@ func TestClosures(t *testing.T) {
 		testIntegerObject(t, evaluated, testCase.expected)
 	}
 }
+
+func TestBuiltInFunctions(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected any
+	}{
+		{`len("")`, 0},
+		{`len("four")`, 4},
+		{`len("hello world")`, 11},
+		{`len(1)`, "argument to `len` not supported, received INTEGER"},
+		{`len("one", "two")`, "wrong number of arguments: received 2, expected 1"},
+	}
+	for _, testCase := range testCases {
+		evaluated := testEval(testCase.input)
+		switch expected := testCase.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case string:
+			errObj, ok := evaluated.(*object.Error)
+			if !ok {
+				t.Errorf("object is not Error. got=%T (%+v)", evaluated, evaluated)
+				continue
+			}
+			if errObj.Message != expected {
+				t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
+			}
+		}
+	}
+}
