@@ -17,11 +17,14 @@ var builtInEnvironment = map[string]*object.BuiltIn{
 	"rest": {
 		Fn: restBuiltIn,
 	},
+	"push": {
+		Fn: pushBuiltIn,
+	},
 }
 
 var lenBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Object {
-	if len(args) != 1 {
-		return object.NewError("wrong number of arguments: received %d, expected %d", len(args), 1)
+	if err := validateArgsLen(1, args...); err != nil {
+		return err
 	}
 	switch arg := args[0].(type) {
 	case *object.String:
@@ -38,7 +41,11 @@ var lenBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Objec
 }
 
 var firstBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Object {
-	err := validateArrayArgs("first", args...)
+	err := validateArgsLen(1, args...)
+	if err != nil {
+		return err
+	}
+	err = validateArrayArgs("first", args...)
 	if err != nil {
 		return err
 	}
@@ -50,7 +57,11 @@ var firstBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Obj
 }
 
 var lastBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Object {
-	err := validateArrayArgs("last", args...)
+	err := validateArgsLen(1, args...)
+	if err != nil {
+		return err
+	}
+	err = validateArrayArgs("last", args...)
 	if err != nil {
 		return err
 	}
@@ -62,7 +73,11 @@ var lastBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Obje
 }
 
 var restBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Object {
-	err := validateArrayArgs("rest", args...)
+	err := validateArgsLen(1, args...)
+	if err != nil {
+		return err
+	}
+	err = validateArrayArgs("rest", args...)
 	if err != nil {
 		return err
 	}
@@ -75,12 +90,34 @@ var restBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Obje
 	return newArray
 }
 
-func validateArrayArgs(fnName string, args ...object.Object) object.Object {
-	if len(args) != 1 {
-		return object.NewError("wrong number of arguments: received %d, expected %d", len(args), 1)
+var pushBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Object {
+	err := validateArgsLen(2, args...)
+	if err != nil {
+		return err
 	}
+	err = validateArrayArgs("push", args...)
+	if err != nil {
+		return err
+	}
+	array := args[0].(*object.Array)
+	newArray := &object.Array{}
+	arrLen := len(array.Elements)
+	newArray.Elements = make([]object.Object, arrLen+1)
+	copy(array.Elements, newArray.Elements)
+	newArray.Elements[arrLen] = args[1]
+	return newArray
+}
+
+func validateArrayArgs(fnName string, args ...object.Object) object.Object {
 	if args[0].Type() != object.ARRAY_OBJ {
 		return object.NewError("argument to `%s` must be ARRAY, received %s", fnName, args[0].Type())
+	}
+	return nil
+}
+
+func validateArgsLen(expectedLen int, args ...object.Object) object.Object {
+	if len(args) != expectedLen {
+		return object.NewError("wrong number of arguments: received %d, expected %d", len(args), expectedLen)
 	}
 	return nil
 }

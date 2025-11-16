@@ -384,6 +384,13 @@ func TestBuiltInFunctions(t *testing.T) {
 		{`rest(1, 2)`, "wrong number of arguments: received 2, expected 1"},
 		{`let a = [1, 2, 3]; rest(rest(a))`, []int{3}},
 		{`let a = [1, 2, 3]; rest(rest(rest(a)))`, []int{}},
+		{`push([], 1)`, []int{1}},
+		{`push([1], 2)`, []int{1, 2}},
+		{`push([1, 2], 3)`, []int{1, 2, 3}},
+		{`let a = [1]; push(a, 2); a`, []int{1}},
+		{`push(1, 1)`, "argument to `push` must be ARRAY, received INTEGER"},
+		{`push([1])`, "wrong number of arguments: received 1, expected 2"},
+		{`push([1], 2, 3)`, "wrong number of arguments: received 3, expected 2"},
 	}
 	for _, testCase := range testCases {
 		evaluated := testEval(testCase.input)
