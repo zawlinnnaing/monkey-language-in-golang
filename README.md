@@ -35,3 +35,4 @@ The Monkey language specification and examples can be found in the test files th
 - [ ] Add support for optional function parameters
 - [ ] Add support for character escaping in string literals. (e.g, "hello \"world\"", "hello \n world")
 - [ ] Extend interpreter to read from a file and executes the code inside it. Eg, `go run command.go test.monkey`
+- [ ] [Array] Add support for `map`, `reduce`, `iter`(similar to for loop) built-in functions
