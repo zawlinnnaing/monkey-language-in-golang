@@ -9,6 +9,9 @@ var builtInEnvironment = map[string]*object.BuiltIn{
 	"first": {
 		Fn: firstBuiltIn,
 	},
+	"last": {
+		Fn: lastBuiltIn,
+	},
 }
 
 var lenBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Object {
@@ -41,4 +44,18 @@ var firstBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Obj
 		return NULL
 	}
 	return arrayObj.Elements[0]
+}
+
+var lastBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return object.NewError("wrong number of arguments: received %d, expected %d", len(args), 1)
+	}
+	if args[0].Type() != object.ARRAY_OBJ {
+		return object.NewError("argument to `last` must be ARRAY, received %s", args[0].Type())
+	}
+	arrayObj := args[0].(*object.Array)
+	if len(arrayObj.Elements) == 0 {
+		return NULL
+	}
+	return arrayObj.Elements[len(arrayObj.Elements)-1]
 }

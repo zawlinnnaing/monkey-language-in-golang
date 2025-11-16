@@ -373,6 +373,10 @@ func TestBuiltInFunctions(t *testing.T) {
 		{`first([])`, nil},
 		{`first(1)`, "argument to `first` must be ARRAY, received INTEGER"},
 		{`first(1, 2)`, "wrong number of arguments: received 2, expected 1"},
+		{`last([1, 2, 3])`, 3},
+		{`last([])`, nil},
+		{`last(1)`, "argument to `last` must be ARRAY, received INTEGER"},
+		{`last(1, 2)`, "wrong number of arguments: received 2, expected 1"},
 	}
 	for _, testCase := range testCases {
 		evaluated := testEval(testCase.input)
