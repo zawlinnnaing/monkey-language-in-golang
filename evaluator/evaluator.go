@@ -57,9 +57,44 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
+	case *ast.ArrayLiteral:
+		elements := evalExpressions(n.Elements, env)
+		if len(elements) == 1 && isError(elements[0]) {
+			return elements[0]
+		}
+		return &object.Array{Elements: elements}
+	case *ast.IndexExpression:
+		return evalIndexExpression(n, env)
+	}
+	return nil
+}
+
+func evalIndexExpression(node *ast.IndexExpression, env *object.Environment) object.Object {
+	left := Eval(node.Left, env)
+	if isError(left) {
+		return left
+	}
+	right := Eval(node.Index, env)
+	if isError(right) {
+		return right
+	}
+	switch {
+	case left.Type() == object.ARRAY_OBJ && right.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExpression(left, right)
+	default:
+		return object.NewError("index operator not supported: %s", right.Type())
 	}
 
-	return nil
+}
+
+func evalArrayIndexExpression(array, index object.Object) object.Object {
+	arrayObj := array.(*object.Array)
+	idx := index.(*object.Integer).Value
+	maxIdx := len(arrayObj.Elements) - 1
+	if idx < 0 || idx > int64(maxIdx) {
+		return NULL
+	}
+	return arrayObj.Elements[idx]
 }
 
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
@@ -71,7 +106,7 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 	if ok {
 		return builtInObj
 	}
-	return object.NewError("Identifier not found: %s", node.Value)
+	return object.NewError("identifier not found: %s", node.Value)
 }
 
 func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Object {

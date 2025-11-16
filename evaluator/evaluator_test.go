@@ -251,6 +251,10 @@ func TestErrorHandling(t *testing.T) {
 			`"hello" - "world"`,
 			"unknown operator: STRING - STRING",
 		},
+		{
+			`[1, 2, 3]["foo"]`,
+			"index operator not supported: STRING",
+		},
 	}
 	for _, testCase := range testCases {
 		evaluated := testEval(testCase.input)
@@ -362,6 +366,13 @@ func TestBuiltInFunctions(t *testing.T) {
 		{`len("hello world")`, 11},
 		{`len(1)`, "argument to `len` not supported, received INTEGER"},
 		{`len("one", "two")`, "wrong number of arguments: received 2, expected 1"},
+		{`len([1, 2, 3])`, 3},
+		{`len([])`, 0},
+		{`len([1, 2, 3, 4, 5])`, 5},
+		{`first([1, 2, 3])`, 1},
+		{`first([])`, nil},
+		{`first(1)`, "argument to `first` must be ARRAY, received INTEGER"},
+		{`first(1, 2)`, "wrong number of arguments: received 2, expected 1"},
 	}
 	for _, testCase := range testCases {
 		evaluated := testEval(testCase.input)
@@ -377,6 +388,57 @@ func TestBuiltInFunctions(t *testing.T) {
 			if errObj.Message != expected {
 				t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
 			}
+		}
+	}
+}
+
+func TestArrayLiterals(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected []int64
+	}{
+		{"[1, 2, 3]", []int64{1, 2, 3}},
+		{"[1 + 2, 3 * 4, 5 + 6]", []int64{3, 12, 11}},
+		{"[]", []int64{}},
+	}
+	for _, testCase := range testCases {
+		evaluated := testEval(testCase.input)
+		arr, ok := evaluated.(*object.Array)
+		if !ok {
+			t.Fatalf("object is not Array. got=%T (%+v)", evaluated, evaluated)
+		}
+		if len(arr.Elements) != len(testCase.expected) {
+			t.Fatalf("array has wrong number of elements. got=%d, expected=%d", len(arr.Elements), len(testCase.expected))
+		}
+		for i, expectedVal := range testCase.expected {
+			testIntegerObject(t, arr.Elements[i], expectedVal)
+		}
+	}
+}
+
+func TestIndexExpression(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected any
+	}{
+		{"[1, 2, 3][0]", 1},
+		{"[1, 2, 3][1]", 2},
+		{"[1, 2, 3][2]", 3},
+		{"let i = 0; [1][i];", 1},
+		{"[1, 2, 3][1 + 1];", 3},
+		{"let myArray = [1, 2, 3]; myArray[2];", 3},
+		{"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6},
+		{"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2},
+		{"[1, 2, 3][3]", nil},
+		{"[1, 2, 3][-1]", nil},
+	}
+	for _, testCase := range testCases {
+		evaluated := testEval(testCase.input)
+		integer, ok := testCase.expected.(int)
+		if ok {
+			testIntegerObject(t, evaluated, int64(integer))
+		} else {
+			testNullObject(t, evaluated)
 		}
 	}
 }

@@ -359,6 +359,8 @@ func TestOperatorPrecedenceString(t *testing.T) {
 			"add(a + b + c * d / f + g)",
 			"add((((a + b) + ((c * d) / f)) + g))",
 		},
+		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{"add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
 	}
 
 	for _, tt := range tests {
@@ -608,4 +610,54 @@ func TestCallExpressionParsing(t *testing.T) {
 	testLiteralExpression(t, callExpressionStatement.Arguments[0], 1)
 	testInfixExpression(t, callExpressionStatement.Arguments[1], 2, "*", 3)
 	testInfixExpression(t, callExpressionStatement.Arguments[2], 4, "+", 5)
+}
+
+func TestArrayLiteralParsing(t *testing.T) {
+	input := "[1, 2 * 2, 3 + 3]"
+	lexer := lexer.New(input)
+	parser := New(lexer)
+	program := parser.ParseProgram()
+	checkParseErrors(t, parser)
+	if len(program.Statements) != 1 {
+		t.Fatalf("Expected program statements to have length: %d, received %d", 1, len(program.Statements))
+	}
+	testExpressionStatement(t, program.Statements[0])
+	expressionStatement := program.Statements[0].(*ast.ExpressionStatement)
+	arrayLiteral, ok := expressionStatement.Expression.(*ast.ArrayLiteral)
+	if !ok {
+		t.Fatalf("Expected array literal, received %T", expressionStatement.Expression)
+	}
+	if len(arrayLiteral.Elements) != 3 {
+		t.Fatalf("Expected array elements to be %d, received %d", 3, len(arrayLiteral.Elements))
+	}
+	testIntegerLiteral(t, arrayLiteral.Elements[0], 1)
+	testInfixExpression(t, arrayLiteral.Elements[1], 2, "*", 2)
+	testInfixExpression(t, arrayLiteral.Elements[2], 3, "+", 3)
+}
+
+func TestIndexExpressionParsing(t *testing.T) {
+	input := "myArray[1 + 1]"
+	lexer := lexer.New(input)
+	parser := New(lexer)
+	program := parser.ParseProgram()
+	checkParseErrors(t, parser)
+
+	if len(program.Statements) != 1 {
+		t.Fatalf("Expected program statements to have length: %d, received %d", 1, len(program.Statements))
+	}
+
+	testExpressionStatement(t, program.Statements[0])
+	expressionStatement := program.Statements[0].(*ast.ExpressionStatement)
+	indexExpression, ok := expressionStatement.Expression.(*ast.IndexExpression)
+	if !ok {
+		t.Fatalf("Expected index expression, received %T", expressionStatement.Expression)
+	}
+
+	if !testIdentifier(t, indexExpression.Left, "myArray") {
+		return
+	}
+
+	if !testInfixExpression(t, indexExpression.Index, 1, "+", 1) {
+		return
+	}
 }

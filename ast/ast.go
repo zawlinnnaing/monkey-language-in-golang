@@ -275,6 +275,47 @@ func (s *StringLiteral) String() string {
 }
 func (s *StringLiteral) expressionNode() {}
 
+type ArrayLiteral struct {
+	Elements []Expression
+	Token    token.Token
+}
+
+func (a *ArrayLiteral) String() string {
+	var out bytes.Buffer
+	elements := []string{}
+	for _, el := range a.Elements {
+		elements = append(elements, el.String())
+	}
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
+	return out.String()
+}
+func (a *ArrayLiteral) TokenLiteral() string {
+	return a.Token.Literal
+}
+func (a *ArrayLiteral) expressionNode() {}
+
+type IndexExpression struct {
+	Token token.Token // "[" token
+	Left  Expression
+	Index Expression
+}
+
+func (ie *IndexExpression) expressionNode() {}
+func (ie *IndexExpression) TokenLiteral() string {
+	return ie.Token.Literal
+}
+func (ie *IndexExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString("[")
+	out.WriteString(ie.Index.String())
+	out.WriteString("])")
+	return out.String()
+}
+
 // Compile time checks
 var _ Expression = (*Identifier)(nil)
 var _ Expression = (*IntegerLiteral)(nil)
@@ -286,3 +327,5 @@ var _ Expression = (*FunctionLiteral)(nil)
 var _ Expression = (*CallExpression)(nil)
 var _ Node = (*Identifier)(nil)
 var _ Expression = (*StringLiteral)(nil)
+var _ Expression = (*ArrayLiteral)(nil)
+var _ Expression = (*IndexExpression)(nil)
