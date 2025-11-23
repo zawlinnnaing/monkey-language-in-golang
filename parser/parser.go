@@ -368,6 +368,36 @@ func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
 	return indexExpression
 }
 
+func (p *Parser) parseHashLiteral() ast.Expression {
+	hash := &ast.HashLiteral{Token: p.currentToken}
+	hash.Pairs = make(map[ast.Expression]ast.Expression)
+
+	for !p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+		key := p.parseExpression(LOWEST)
+		if !p.expectPeek(token.COLON) {
+			return nil
+		}
+		p.nextToken()
+		value := p.parseExpression(LOWEST)
+		hash.Pairs[key] = value
+
+		if p.peekTokenIs(token.COMMA) {
+			p.nextToken()
+			continue
+		}
+
+		if !p.peekTokenIs(token.RBRACE) {
+			return nil
+		}
+	}
+	if !p.expectPeek(token.RBRACE) {
+		return nil
+	}
+
+	return hash
+}
+
 func (p *Parser) getTokenPrecedence(token token.Token) int {
 	precedence, ok := precedencesMap[token.Type]
 	if !ok {
@@ -404,6 +434,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFn(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefixFn(token.STRING, p.parseStringLiteral)
 	p.registerPrefixFn(token.LBRACKET, p.parseArrayLiteral)
+	p.registerPrefixFn(token.LBRACE, p.parseHashLiteral)
 
 	p.registerInfixFn(token.PLUS, p.parseInfixExpression)
 	p.registerInfixFn(token.MINUS, p.parseInfixExpression)
