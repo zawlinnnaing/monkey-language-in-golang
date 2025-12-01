@@ -139,9 +139,6 @@ func (f *Function) Inspect() string {
 	out.WriteString("\n}")
 	return out.String()
 }
-func (f *Function) HashKey() HashKey {
-	return HashKey{}
-}
 
 type String struct {
 	Value string
@@ -170,9 +167,6 @@ func (b *BuiltIn) Type() ObjectType {
 }
 func (b *BuiltIn) Inspect() string {
 	return "built-in function"
-}
-func (b *BuiltIn) HashKey() HashKey {
-	return HashKey{}
 }
 
 type Array struct {

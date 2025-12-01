@@ -25,6 +25,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalBooleanLiteral(n)
 	case *ast.StringLiteral:
 		return &object.String{Value: n.Value}
+	case *ast.HashLiteral:
+		return evalHashLiteral(n, env)
 	case *ast.LetStatement:
 		return evalLetStatement(n, env)
 	case *ast.PrefixExpression:
@@ -81,6 +83,8 @@ func evalIndexExpression(node *ast.IndexExpression, env *object.Environment) obj
 	switch {
 	case left.Type() == object.ARRAY_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExpression(left, right)
+	case left.Type() == object.HASH_OBJ:
+		return evalHashIndexExpression(left, right)
 	default:
 		return object.NewError("index operator not supported: %s", right.Type())
 	}
@@ -95,6 +99,19 @@ func evalArrayIndexExpression(array, index object.Object) object.Object {
 		return NULL
 	}
 	return arrayObj.Elements[idx]
+}
+
+func evalHashIndexExpression(hashLiteral, index object.Object) object.Object {
+	hashableIndex, ok := index.(object.Hashable)
+	if !ok {
+		return object.NewError("unusable as hash key: %s", index.Type())
+	}
+	hashNode := hashLiteral.(*object.Hash)
+	hashPair, ok := hashNode.Pairs[hashableIndex.HashKey()]
+	if !ok {
+		return NULL
+	}
+	return hashPair.Value
 }
 
 func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object {
@@ -211,6 +228,30 @@ func evalBooleanLiteral(node *ast.BooleanLiteral) object.Object {
 		return TRUE
 	}
 	return FALSE
+}
+
+func evalHashLiteral(node *ast.HashLiteral, env *object.Environment) object.Object {
+	pairs := make(map[object.HashKey]object.HashPair)
+
+	for keyNode, valueNode := range node.Pairs {
+		key := Eval(keyNode, env)
+		if isError(key) {
+			return key
+		}
+		hashableKey, ok := key.(object.Hashable)
+		if !ok {
+			return object.NewError("unusable as hash key: %s", key.Type())
+		}
+		hashed := hashableKey.HashKey()
+		value := Eval(valueNode, env)
+		if isError(value) {
+			return value
+		}
+		pairs[hashed] = object.HashPair{Key: key, Value: value}
+	}
+	return &object.Hash{
+		Pairs: pairs,
+	}
 }
 
 func evalProgram(program *ast.Program, env *object.Environment) object.Object {
