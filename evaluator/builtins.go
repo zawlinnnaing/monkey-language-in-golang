@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+	"fmt"
+
 	"github.com/zawlinnnaing/monkey-language-in-golang/object"
 )
 
@@ -19,6 +21,9 @@ var builtInEnvironment = map[string]*object.BuiltIn{
 	},
 	"push": {
 		Fn: pushBuiltIn,
+	},
+	"print": {
+		Fn: printBuiltIn,
 	},
 }
 
@@ -106,6 +111,13 @@ var pushBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Obje
 	copy(array.Elements, newArray.Elements)
 	newArray.Elements[arrLen] = args[1]
 	return newArray
+}
+
+var printBuiltIn object.BuiltInFunction = func(args ...object.Object) object.Object {
+	for _, arg := range args {
+		fmt.Println(arg.Inspect())
+	}
+	return NULL
 }
 
 func validateArrayArgs(fnName string, args ...object.Object) object.Object {
